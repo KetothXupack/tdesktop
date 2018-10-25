@@ -35,6 +35,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/text_options.h"
 #include "core/crash_reports.h"
 
+// #include <iostream>
+
 namespace {
 
 constexpr auto kStatusShowClientsideTyping = 6000;
@@ -848,6 +850,7 @@ void History::setUnreadMentionsCount(int count) {
 		count = _unreadMentions.size();
 	}
 	_unreadMentionsCount = count;
+	updateChatListEntry();
 }
 
 bool History::addToUnreadMentions(
@@ -879,6 +882,7 @@ void History::eraseFromUnreadMentions(MsgId msgId) {
 			--*_unreadMentionsCount;
 		}
 	}
+	updateChatListEntry();
 	Notify::peerUpdatedDelayed(peer, Notify::PeerUpdate::Flag::UnreadMentionsChanged);
 }
 
@@ -1655,6 +1659,8 @@ bool History::unreadCountKnown() const {
 }
 
 void History::setUnreadCount(int newUnreadCount) {
+	//std::cout << "setUnreadCount: newUnreadCount=" << newUnreadCount << std::endl;
+
 	if (!_unreadCount || *_unreadCount != newUnreadCount) {
 		const auto unreadCountDelta = _unreadCount | [&](int count) {
 			return newUnreadCount - count;
@@ -1699,6 +1705,7 @@ void History::setUnreadCount(int newUnreadCount) {
 			}
 		}
 
+		updateChatListEntry();
 		if (inChatList(Dialogs::Mode::All)) {
 			const auto delta = unreadCountDelta
 				? *unreadCountDelta
@@ -1723,10 +1730,9 @@ void History::setUnreadMark(bool unread) {
 			if (inChatList(Dialogs::Mode::All)) {
 				const auto delta = _unreadMark ? 1 : -1;
 				App::histories().unreadIncrement(delta, mute());
-
-				updateChatListEntry();
 			}
 		}
+		updateChatListEntry();
 		Notify::peerUpdatedDelayed(
 			peer,
 			Notify::PeerUpdate::Flag::UnreadViewChanged);

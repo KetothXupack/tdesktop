@@ -682,6 +682,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_profile_info_section" = "Info";
 "lng_info_tab_media" = "Media";
 "lng_info_mobile_label" = "Mobile";
+"lng_info_peer_id_label" = "Peer ID";
 "lng_info_username_label" = "Username";
 "lng_info_bio_label" = "Bio";
 "lng_info_link_label" = "Link";
@@ -1159,6 +1160,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 "lng_context_copy_email" = "Copy Email Address";
 "lng_context_copy_hashtag" = "Copy Hashtag";
 "lng_context_copy_mention" = "Copy Username";
+"lng_context_copy_peer_id" = "Copy Peer ID";
 "lng_context_save_image" = "Save Image As...";
 "lng_context_copy_image" = "Copy Image";
 "lng_context_cancel_download" = "Cancel Download";

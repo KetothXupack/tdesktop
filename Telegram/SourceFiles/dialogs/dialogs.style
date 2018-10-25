@@ -157,6 +157,10 @@ dialogsPinnedIcon: icon {{ "dialogs_pinned", dialogsUnreadBgMuted }};
 dialogsPinnedIconOver: icon {{ "dialogs_pinned", dialogsUnreadBgMutedOver }};
 dialogsPinnedIconActive: icon {{ "dialogs_pinned", dialogsUnreadBgMutedActive }};
 
+dialogsSoftPinnedIcon: icon {{ "profile_verified_star", dialogsUnreadBgMuted }};
+dialogsSoftPinnedIconOver: icon {{ "profile_verified_star", dialogsUnreadBgMutedOver }};
+dialogsSoftPinnedIconActive: icon {{ "profile_verified_star", dialogsUnreadBgMutedActive }};
+
 dialogsVerifiedIcon: icon {
 	{ "dialogs_verified_star", dialogsVerifiedIconBg, point(4px, 2px) },
 	{ "dialogs_verified_check", dialogsVerifiedIconFg, point(7px, 7px) },

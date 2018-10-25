@@ -10,6 +10,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "styles/style_dialogs.h"
 #include "ui/effects/ripple_animation.h"
 #include "dialogs/dialogs_entry.h"
+// #include "history/history_item.h"
+#include "history/history.h"
 #include "mainwidget.h"
 
 namespace Dialogs {
@@ -41,7 +43,15 @@ void RippleRow::paintRipple(Painter &p, int x, int y, int outerWidth, TimeMs ms,
 }
 
 uint64 Row::sortKey() const {
-	return _id.entry()->sortKeyInChatList();
+	auto _entry = _id.entry();
+
+//	auto _history       = _id.history();
+//	auto muted          = _history ? _history->chatListMutedBadge() : false;
+//	auto unreadMention  = _history ? _history->hasUnreadMentions() : false;
+//	auto unreadCount    = _entry ? _entry->chatListUnreadCount() : 0;
+//	_entry->updatePriority((unreadCount > 0 && !muted) || unreadMention);
+
+	return _entry->sortKeyInChatList();
 }
 
 FakeRow::FakeRow(Key searchInChat, not_null<HistoryItem*> item)

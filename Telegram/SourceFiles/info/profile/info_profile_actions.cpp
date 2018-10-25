@@ -207,6 +207,21 @@ DetailsFiller::DetailsFiller(
 , _wrap(_parent) {
 }
 
+auto PlainPeerIdValue(not_null<PeerData*> peer) {
+    return Notify::PeerUpdateValue(
+            peer,
+            Notify::PeerUpdate::Flag::None
+    ) | rpl::map([peer] {
+        return QString::number(peer->id);
+    });
+}
+
+rpl::producer<TextWithEntities> PeerIdValue(
+        not_null<PeerData*> peer) {
+    return PlainPeerIdValue(peer)
+         | WithEmptyEntities();
+}
+
 object_ptr<Ui::RpWidget> DetailsFiller::setupInfo() {
 	auto result = object_ptr<Ui::VerticalLayout>(_wrap);
 	auto tracker = Ui::MultiSlideTracker();
@@ -282,6 +297,12 @@ object_ptr<Ui::RpWidget> DetailsFiller::setupInfo() {
 		});
 		addInfoLine(lng_info_about_label, AboutValue(_peer));
 	}
+
+    addInfoOneLine(
+        lng_info_peer_id_label,
+        PeerIdValue(_peer),
+        lang(lng_context_copy_peer_id));
+
 	if (!_peer->isSelf()) {
 		// No notifications toggle for Self => no separator.
 		result->add(object_ptr<Ui::SlideWrap<>>(

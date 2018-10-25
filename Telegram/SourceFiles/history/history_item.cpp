@@ -175,9 +175,9 @@ void HistoryItem::markMediaRead() {
 	_flags &= ~MTPDmessage::Flag::f_media_unread;
 
 	if (mentionsMe()) {
-		history()->updateChatListEntry();
 		history()->eraseFromUnreadMentions(id);
 	}
+	history()->updateChatListEntry();
 }
 
 bool HistoryItem::definesReplyKeyboard() const {

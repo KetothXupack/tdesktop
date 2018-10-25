@@ -33,6 +33,15 @@ struct PositionChange {
 	int movedTo;
 };
 
+enum EntryCategory : uint64 {
+	SOFT_PINNED = 0xD
+	, UNMUTED_UNREAD = 0xC
+	, UNMUTED_READ_YOUNG = 0xB
+	, MUTED = 0xA
+	, UNMUTED_READ_OLD = 0x9
+	, BOTTOM = 0x8
+};
+
 class Entry {
 public:
 	Entry(const Key &key);
@@ -51,20 +60,29 @@ public:
 		Mode list,
 		QChar letter,
 		not_null<Row*> row);
-	void updateChatListEntry() const;
+	void updateChatListEntry();
 	bool isPinnedDialog() const {
 		return _pinnedIndex > 0;
 	}
+	bool isSoftPinnedDialog() const {
+		return _messageCategory == EntryCategory::SOFT_PINNED;
+	}
+
 	void cachePinnedIndex(int index);
 	bool isProxyPromoted() const {
 		return _isProxyPromoted;
 	}
 	virtual bool useProxyPromotion() const = 0;
 	void cacheProxyPromoted(bool promoted);
-	uint64 sortKeyInChatList() const {
-		return _sortKeyInChatList;
+
+	uint64 sortKeyInChatList();
+
+	virtual bool updatePriority();
+
+	void updateChatListSortPosition() {
+		updateChatListEntry();
 	}
-	void updateChatListSortPosition();
+
 	void setChatsListTimeId(TimeId date);
 	virtual void updateChatListExistence();
 	bool needUpdateInChatList() const;
@@ -107,6 +125,7 @@ private:
 	virtual TimeId adjustChatListTimeId() const;
 	virtual void changedInChatListHook(Dialogs::Mode list, bool added);
 	virtual void changedChatListPinHook();
+	virtual void calculateChatListSortPosition();
 
 	void setChatListExistence(bool exists);
 	RowsByLetter &chatListLinks(Mode list);
@@ -120,6 +139,7 @@ private:
 	bool _isProxyPromoted = false;
 	TimeId _lastMessageTimeId = 0;
 
+	EntryCategory _messageCategory = EntryCategory::BOTTOM;
 };
 
 } // namespace Dialogs

@@ -305,6 +305,7 @@ void Feed::setLastMessageFromChannels() {
 void Feed::updateChatsListDate() {
 	if (_lastMessage && *_lastMessage) {
 		setChatsListTimeId((*_lastMessage)->date());
+		updateChatListEntry();
 	}
 }
 

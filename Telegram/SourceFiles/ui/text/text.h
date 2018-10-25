@@ -84,6 +84,14 @@ public:
 	void setRichText(const style::TextStyle &st, const QString &text, TextParseOptions options = _defaultOptions, const TextCustomTagsMap &custom = TextCustomTagsMap());
 	void setMarkedText(const style::TextStyle &st, const TextWithEntities &textWithEntities, const TextParseOptions &options = _defaultOptions);
 
+	QString getPlainText() const {
+		return _text;
+	}
+
+	void setPlainText(const QString &text) {
+		_text = text;
+	}
+
 	void setLink(uint16 lnkIndex, const ClickHandlerPtr &lnk);
 	bool hasLinks() const;
 
