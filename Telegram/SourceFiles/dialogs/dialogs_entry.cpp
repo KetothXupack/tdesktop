@@ -5,8 +5,10 @@ the official desktop application for the Telegram messaging service.
 For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
+#include "core/utils.h"
 #include "dialogs/dialogs_entry.h"
 
+#include "base/unixtime.h"
 #include "dialogs/dialogs_key.h"
 #include "dialogs/dialogs_indexed_list.h"
 #include "data/data_session.h"
@@ -17,16 +19,55 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history.h"
 #include "styles/style_dialogs.h" // st::dialogsTextWidthMin
 
+#include <QStringBuilder>
+#include <QStandardPaths>
+#include <ctime>
+#include <iostream>
+#include <set>
+#include <fstream>
+#include <limits>
+#include <ios>
+#include <memory>
+#include <string>
+
+
 namespace Dialogs {
 namespace {
 
 auto DialogsPosToTopShift = 0;
+
+const uint64 OLD_MESSAGE = 604800; // 1 week
+const std::string PEERS_CONFIG_FILE =
+        (QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) % "/telegram_peers.conf").toUtf8().constData();
+
+const auto STREAM_MAX_SIZE = std::numeric_limits<std::streamsize>::max();
+
+std::atomic<std::set<PeerId>*> soft_pinned_peers;
 
 uint64 DialogPosFromDate(TimeId date) {
 	if (!date) {
 		return 0;
 	}
 	return (uint64(date) << 32) | (++DialogsPosToTopShift);
+}
+
+// 0. promoted:
+//     0xFFFFFFFFFFFF0001
+// 1. pinned dialog:
+//     0xFFFFFFFF00000000 - 0xFFFFFFFFFFFFFFFF
+// 2. un-muted and unread or message with unread mention dialogs:
+//     0xD000000000000000 - 0xDFFFFFFFF0000000
+// 3. un-muted (and read) dialogs age <= 1w:
+//     0xC000000000000000 - 0xCFFFFFFFF0000000
+// 4. muted dialog:
+//     0xB000000000000000 - 0xBFFFFFFFF0000000
+// 3. un-muted (and read) dialogs age >= 1w:
+//     0xA000000000000000 - 0xAFFFFFFFF0000000
+uint64 DialogPosFromDateAndCategory(TimeId date, EntryCategory category) {
+	if (!date) {
+		return 0;
+	}
+	return ((static_cast<uint64>(category) << 60) + (uint64(date) << 28)) | (++DialogsPosToTopShift);
 }
 
 uint64 FixedOnTopDialogPos(int index) {
@@ -85,23 +126,111 @@ bool Entry::needUpdateInChatList() const {
 }
 
 void Entry::updateChatListSortPosition() {
-	if (session().supportMode()
-		&& _sortKeyInChatList != 0
-		&& session().settings().supportFixChatsOrder()) {
-		updateChatListEntry();
-		return;
-	}
-	const auto fixedIndex = fixedOnTopIndex();
-	_sortKeyInChatList = fixedIndex
-		? FixedOnTopDialogPos(fixedIndex)
-		: isPinnedDialog()
-		? PinnedDialogPos(_pinnedIndex)
-		: DialogPosFromDate(adjustedChatListTimeId());
+	sortKeyInChatList();
+
 	if (needUpdateInChatList()) {
 		setChatListExistence(true);
 	} else {
 		_sortKeyInChatList = 0;
 	}
+}
+
+uint64 Entry::sortKeyInChatList() {
+	calculateChatListSortPosition();
+	return _sortKeyInChatList;
+}
+
+bool Entry::calculateChatListSortPosition() {
+	const auto changed = updatePriority();
+	const auto fixedIndex = fixedOnTopIndex();
+	_sortKeyInChatList = fixedIndex
+		? FixedOnTopDialogPos(fixedIndex)
+		: isPinnedDialog()
+		? PinnedDialogPos(_pinnedIndex)
+		: DialogPosFromDateAndCategory(adjustedChatListTimeId(), __messageCategory);
+
+	auto inChatList = shouldBeInChatList();
+	auto links = chatListLinks(Mode::All);
+	if (links.find(0) != links.cend() && __updateNeeded) {
+		__updateNeeded = false;
+		setChatListExistence(true);
+	} else if (!inChatList) {
+		_sortKeyInChatList = 0;
+	}
+
+	return changed;
+}
+
+void lazyLoadSoftlyPinnedPeers() {
+	if (!soft_pinned_peers.load()) {
+		std::cout << "Loading soft pinned peers list from " << PEERS_CONFIG_FILE << "..." << std::endl;
+		auto newPeers = new std::set<PeerId>();
+		std::ifstream in(PEERS_CONFIG_FILE);
+		while (in.is_open()) {
+			PeerId peerId;
+			if (!(in >> peerId)) {
+				break;
+			}
+
+			std::cout << "Peer id " << peerId << " added to soft pinned peers list" << std::endl;
+			in.ignore(STREAM_MAX_SIZE, '\n');
+			newPeers->insert(peerId);
+		}
+		in.close();
+
+		soft_pinned_peers.store(newPeers);
+		std::cout << "Loaded " << newPeers->size() << " soft pinned peers!" << std::endl;
+	}
+}
+
+bool Entry::updatePriority() {
+	lazyLoadSoftlyPinnedPeers();
+
+	auto messageCategory = __messageCategory;
+	auto unreadMention = __unreadMention;
+	auto muted = __muted;
+	auto unreadCount = __unreadCount;
+
+	auto _history = _key ? _key.history() : nullptr;
+	if (_history && _history->lastMessageKnown()) {
+		muted = _history
+			? _history->mute()
+			: false;
+		unreadMention = _history
+			? _history->hasUnreadMentions()
+			: false;
+		auto peerId = _history
+			? _history->peer->id
+			: 0;
+
+		unreadCount = chatListUnreadCount(); // may be -1 if chat list not loaded
+		auto messageAge = base::unixtime::now() - _timeId;
+		if (soft_pinned_peers.load()->count(peerId) != 0) {
+			messageCategory = EntryCategory::SOFT_PINNED;
+		} else if ((__unreadCount > 0 && !__muted) || __unreadMention || chatListUnreadMark()) {
+			messageCategory = EntryCategory::UNMUTED_UNREAD;
+		} else if (!__muted && __unreadCount == 0 && messageAge <= OLD_MESSAGE) {
+			messageCategory = EntryCategory::UNMUTED_READ_YOUNG;
+		} else if (!__muted && __unreadCount == 0 && messageAge > OLD_MESSAGE) {
+			messageCategory = EntryCategory::UNMUTED_READ_OLD;
+		} else if (__muted) {
+			messageCategory = EntryCategory::MUTED;
+		}
+	}
+
+	// we want to repaint if any of this parameters was changed
+	bool result = (__messageCategory != messageCategory);
+	result |= (__unreadMention != unreadMention);
+	result |= (__muted != muted);
+	result |= (__unreadCount != unreadCount);
+
+	__updateNeeded |= result;
+
+	__messageCategory = messageCategory;
+	__unreadMention = unreadMention;
+	__muted = muted;
+	__unreadCount = unreadCount;
+	return result;
 }
 
 void Entry::updateChatListExistence() {
@@ -139,8 +268,9 @@ const RowsByLetter &Entry::chatListLinks(Mode list) const {
 }
 
 Row *Entry::mainChatListLink(Mode list) const {
-	auto it = chatListLinks(list).find(0);
-	Assert(it != chatListLinks(list).cend());
+	auto links = chatListLinks(list);
+	auto it = links.find(0);
+	Assert(it != links.cend());
 	return it->second;
 }
 
@@ -203,7 +333,9 @@ void Entry::addChatListEntryByLetter(
 	}
 }
 
-void Entry::updateChatListEntry() const {
+void Entry::updateChatListEntry() {
+	calculateChatListSortPosition();
+
 	if (const auto main = App::main()) {
 		if (inChatList()) {
 			main->repaintDialogRow(

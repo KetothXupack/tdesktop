@@ -15,6 +15,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "logs.h"
 
 #include <QFile>
+#include <iostream>
 #include <rlottie.h>
 #include <crl/crl_async.h>
 #include <crl/crl_on_main.h>
@@ -75,7 +76,7 @@ details::InitData CheckSharedState(std::unique_ptr<SharedState> state) {
 		|| information.size.isEmpty()) {
 		return Error::NotSupported;
 	}
-	return state;
+	return  std::move(state);
 }
 
 details::InitData Init(
@@ -87,12 +88,13 @@ details::InitData Init(
 		return *error;
 	}
 	auto animation = details::CreateFromContent(content, replacements);
-	return animation
+	auto result = animation
 		? CheckSharedState(std::make_unique<SharedState>(
 			std::move(animation),
 			request.empty() ? FrameRequest{ kIdealSize } : request,
 			quality))
 		: Error::ParseFailed;
+	return result;
 }
 
 details::InitData Init(

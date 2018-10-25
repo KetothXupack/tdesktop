@@ -17,6 +17,15 @@ using Folder = Data::Folder;
 
 } // namespace
 
+std::ostream& operator<<(std::ostream& os, const Key& key) {
+	return os << "Key{"
+			<< "entry=" << key.entry()
+			<< ", history=" << key.history()
+			<< ", folder=" << key.folder()
+			<< ", peer=" << key.peer()
+			<< "}";
+}
+
 not_null<Entry*> Key::entry() const {
 	if (const auto p = base::get_if<not_null<History*>>(&_value)) {
 		return *p;

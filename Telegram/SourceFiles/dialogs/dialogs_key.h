@@ -9,6 +9,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "base/value_ordering.h"
 
+#include <iostream>
+
 class History;
 
 namespace Data {
@@ -75,6 +77,8 @@ private:
 		not_null<Data::Folder*>> _value;
 
 };
+
+std::ostream& operator<<(std::ostream& os, const Key& key);
 
 struct RowDescriptor {
 	RowDescriptor() = default;

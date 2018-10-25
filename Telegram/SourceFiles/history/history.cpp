@@ -832,6 +832,7 @@ void History::eraseFromUnreadMentions(MsgId msgId) {
 	if (_unreadMentionsCount && *_unreadMentionsCount > 0) {
 		setUnreadMentionsCount(*_unreadMentionsCount - 1);
 	}
+	updateChatListEntry();
 	Notify::peerUpdatedDelayed(peer, Notify::PeerUpdate::Flag::UnreadMentionsChanged);
 }
 

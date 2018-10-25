@@ -87,6 +87,15 @@ inline UnreadState operator-(const UnreadState &a, const UnreadState &b) {
 	return result;
 }
 
+enum EntryCategory : uint64 {
+	SOFT_PINNED = 0xD
+	, UNMUTED_UNREAD = 0xC
+	, UNMUTED_READ_YOUNG = 0xB
+	, MUTED = 0xA
+	, UNMUTED_READ_OLD = 0x9
+	, BOTTOM = 0x8
+};
+
 class Entry {
 public:
 	Entry(not_null<Data::Session*> owner, const Key &key);
@@ -109,20 +118,27 @@ public:
 		Mode list,
 		QChar letter,
 		not_null<Row*> row);
-	void updateChatListEntry() const;
+	void updateChatListEntry();
 	bool isPinnedDialog() const {
 		return _pinnedIndex > 0;
 	}
+	bool isSoftPinnedDialog() const {
+		return __messageCategory == EntryCategory::SOFT_PINNED;
+	}
+
 	void cachePinnedIndex(int index);
 	bool isProxyPromoted() const {
 		return _isProxyPromoted;
 	}
 	void cacheProxyPromoted(bool promoted);
-	uint64 sortKeyInChatList() const {
-		return _sortKeyInChatList;
-	}
+
+	uint64 sortKeyInChatList();
+
+	virtual bool updatePriority();
+
 	void updateChatListSortPosition();
 	void setChatListTimeId(TimeId date);
+
 	virtual void updateChatListExistence();
 	bool needUpdateInChatList() const;
 	virtual TimeId adjustedChatListTimeId() const;
@@ -186,6 +202,7 @@ protected:
 
 private:
 	virtual void changedChatListPinHook();
+	virtual bool calculateChatListSortPosition();
 
 	void notifyUnreadStateChange(const UnreadState &wasState);
 
@@ -203,6 +220,13 @@ private:
 	int _pinnedIndex = 0;
 	bool _isProxyPromoted = false;
 	TimeId _timeId = 0;
+
+	EntryCategory __messageCategory = EntryCategory::BOTTOM;
+
+	bool __muted = true;
+	bool __unreadMention = false;
+	int __unreadCount = 0;
+	int __updateNeeded = false;
 
 };
 

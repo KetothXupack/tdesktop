@@ -17,6 +17,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mainwidget.h"
 #include "styles/style_dialogs.h"
 
+#include <QStringBuilder>
+#include <string>
+#include <iostream>
+#include <ios>
+
 namespace Dialogs {
 namespace {
 

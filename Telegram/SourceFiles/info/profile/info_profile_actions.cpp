@@ -49,6 +49,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include <QtGui/QGuiApplication>
 #include <QtGui/QClipboard>
+#include <iostream>
 
 namespace Info {
 namespace Profile {
@@ -216,6 +217,21 @@ DetailsFiller::DetailsFiller(
 , _wrap(_parent) {
 }
 
+auto PlainPeerIdValue(not_null<PeerData*> peer) {
+    return Notify::PeerUpdateValue(
+            peer,
+            Notify::PeerUpdate::Flag::None
+    ) | rpl::map([peer] {
+        return QString::number(peer->id);
+    });
+}
+
+rpl::producer<TextWithEntities> PeerIdValue(
+        not_null<PeerData*> peer) {
+    return PlainPeerIdValue(peer)
+         | Ui::Text::ToWithEntities();
+}
+
 object_ptr<Ui::RpWidget> DetailsFiller::setupInfo() {
 	auto result = object_ptr<Ui::VerticalLayout>(_wrap);
 	auto tracker = Ui::MultiSlideTracker();
@@ -326,6 +342,10 @@ object_ptr<Ui::RpWidget> DetailsFiller::setupInfo() {
 
 		addInfoLine(tr::lng_info_about_label(), AboutValue(_peer));
 	}
+	addInfoOneLine(
+		tr::lng_info_peer_id_label(),
+		PeerIdValue(_peer),
+		tr::lng_context_copy_peer_id(tr::now));
 	if (!_peer->isSelf()) {
 		// No notifications toggle for Self => no separator.
 		result->add(object_ptr<Ui::SlideWrap<>>(

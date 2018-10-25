@@ -117,6 +117,7 @@ int PaintWideCounter(
 		bool displayUnreadMark,
 		bool displayMentionBadge,
 		bool displayPinnedIcon,
+		bool displaySoftPinnedIcon,
 		int unreadCount,
 		bool active,
 		bool selected,
@@ -145,7 +146,14 @@ int PaintWideCounter(
 		availableWidth -= icon.width() + st::dialogsUnreadPadding;
 
 		hadOneBadge = true;
+	} else if (displaySoftPinnedIcon) {
+		auto &icon = (active ? st::dialogsSoftPinnedIconActive : (selected ? st::dialogsSoftPinnedIconOver : st::dialogsSoftPinnedIcon));
+		icon.paint(p, fullWidth - st::dialogsPadding.x() - icon.width(), texttop, fullWidth);
+		availableWidth -= icon.width() + st::dialogsUnreadPadding;
+
+		hadOneBadge = true;
 	}
+
 	if (displayMentionBadge) {
 		auto counter = qsl("@");
 		auto unreadRight = fullWidth - st::dialogsPadding.x() - (initial - availableWidth);
@@ -325,6 +333,10 @@ void paintRow(
 			auto &icon = (active ? st::dialogsPinnedIconActive : (selected ? st::dialogsPinnedIconOver : st::dialogsPinnedIcon));
 			icon.paint(p, fullWidth - st::dialogsPadding.x() - icon.width(), texttop, fullWidth);
 			availableWidth -= icon.width() + st::dialogsUnreadPadding;
+		} else if (entry->isSoftPinnedDialog()) {
+			auto &icon = (active ? st::dialogsSoftPinnedIconActive : (selected ? st::dialogsSoftPinnedIconOver : st::dialogsSoftPinnedIcon));
+			icon.paint(p, fullWidth - st::dialogsPadding.x() - icon.width(), texttop, fullWidth);
+			availableWidth -= icon.width() + st::dialogsUnreadPadding;
 		}
 
 		p.setFont(st::dialogsTextFont);
@@ -352,6 +364,10 @@ void paintRow(
 			auto &icon = (active ? st::dialogsPinnedIconActive : (selected ? st::dialogsPinnedIconOver : st::dialogsPinnedIcon));
 			icon.paint(p, fullWidth - st::dialogsPadding.x() - icon.width(), texttop, fullWidth);
 			availableWidth -= icon.width() + st::dialogsUnreadPadding;
+		} else if (entry->isSoftPinnedDialog()) {
+			auto &icon = (active ? st::dialogsSoftPinnedIconActive : (selected ? st::dialogsSoftPinnedIconOver : st::dialogsSoftPinnedIcon));
+			icon.paint(p, fullWidth - st::dialogsPadding.x() - icon.width(), texttop, fullWidth);
+			availableWidth -= icon.width() + st::dialogsUnreadPadding;
 		}
 
 		auto &color = active ? st::dialogsTextFgServiceActive : (selected ? st::dialogsTextFgServiceOver : st::dialogsTextFgService);
@@ -368,6 +384,11 @@ void paintRow(
 	} else if (entry->isPinnedDialog() && !entry->fixedOnTopIndex()) {
 		auto availableWidth = namewidth;
 		auto &icon = (active ? st::dialogsPinnedIconActive : (selected ? st::dialogsPinnedIconOver : st::dialogsPinnedIcon));
+		icon.paint(p, fullWidth - st::dialogsPadding.x() - icon.width(), texttop, fullWidth);
+		availableWidth -= icon.width() + st::dialogsUnreadPadding;
+	} else if (entry->isSoftPinnedDialog()) {
+		auto availableWidth = namewidth;
+		auto &icon = (active ? st::dialogsSoftPinnedIconActive : (selected ? st::dialogsSoftPinnedIconOver : st::dialogsSoftPinnedIcon));
 		icon.paint(p, fullWidth - st::dialogsPadding.x() - icon.width(), texttop, fullWidth);
 		availableWidth -= icon.width() + st::dialogsUnreadPadding;
 	}
@@ -408,11 +429,13 @@ void paintRow(
 		sendStateIcon->paint(p, rectForName.topLeft() + QPoint(rectForName.width(), 0), fullWidth);
 	}
 
+	QString peerPostfix = QString("");
+
 	if (flags & Flag::SavedMessages) {
 		auto text = tr::lng_saved_messages(tr::now);
 		const auto textWidth = st::msgNameFont->width(text);
 		if (textWidth > rectForName.width()) {
-			text = st::msgNameFont->elided(text, rectForName.width());
+			text = st::msgNameFont->elided(text + peerPostfix, rectForName.width());
 		}
 		p.setFont(st::msgNameFont);
 		p.setPen(active
@@ -448,6 +471,8 @@ void paintRow(
 			: selected
 			? st::dialogsNameFgOver
 			: st::dialogsNameFg);
+		auto extendedText = Ui::Text::String(from->nameText());
+		extendedText.setPlainText(extendedText.getPlainText() + peerPostfix);
 		from->nameText().drawElided(p, rectForName.left(), rectForName.top(), rectForName.width());
 	} else if (hiddenSenderInfo) {
 		hiddenSenderInfo->nameText.drawElided(p, rectForName.left(), rectForName.top(), rectForName.width());
@@ -459,7 +484,8 @@ void paintRow(
 				: st::dialogsArchiveFg);
 		p.setPen(nameFg);
 		p.setFont(st::msgNameFont);
-		auto text = entry->chatListName(); // TODO feed name with emoji
+
+		auto text = entry->chatListName() + peerPostfix; // TODO feed name with emoji
 		auto textWidth = st::msgNameFont->width(text);
 		if (textWidth > rectForName.width()) {
 			text = st::msgNameFont->elided(text, rectForName.width());
@@ -670,6 +696,12 @@ void RowPainter::paint(
 		&& entry->isPinnedDialog()
 		&& !entry->fixedOnTopIndex();
 
+	const auto displaySoftPinnedIcon = !displayUnreadCounter
+		&& !displayMentionBadge
+		&& !displayUnreadMark
+		&& !entry->isPinnedDialog()
+		&& entry->isSoftPinnedDialog();
+
 	const auto from = history
 		? (history->peer->migrateTo()
 			? history->peer->migrateTo()
@@ -694,6 +726,7 @@ void RowPainter::paint(
 			displayUnreadMark,
 			displayMentionBadge,
 			displayPinnedIcon,
+			displaySoftPinnedIcon,
 			unreadCount,
 			active,
 			selected,
@@ -812,6 +845,7 @@ void RowPainter::paint(
 		&& !displayMentionBadge
 		&& unreadMark;
 	const auto displayPinnedIcon = false;
+	const auto displaySoftPinnedIcon = false;
 
 	const auto paintItemCallback = [&](int nameleft, int namewidth) {
 		const auto texttop = st::dialogsPadding.y()
@@ -826,6 +860,7 @@ void RowPainter::paint(
 			displayUnreadMark,
 			displayMentionBadge,
 			displayPinnedIcon,
+			displaySoftPinnedIcon,
 			unreadCount,
 			active,
 			selected,
