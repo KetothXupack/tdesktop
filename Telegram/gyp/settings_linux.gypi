@@ -9,9 +9,10 @@
     [ 'build_linux', {
       'variables': {
         'linux_common_flags': [
+          '-O3',
           '-pipe',
           '-Wall',
-          '-Werror',
+          # '-Werror',
           '-W',
           '-fPIC',
           '-Wno-unused-variable',

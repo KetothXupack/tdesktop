@@ -5,9 +5,9 @@ set -e
 REPO="$PWD"
 
 BUILD="$REPO/build"
-UPSTREAM="$REPO/upstream"
+UPSTREAM="$REPO"
 EXTERNAL="$REPO/external"
-CACHE="$HOME/travisCacheDir"
+CACHE="$REPO/travisCacheDir"
 
 QT_WAS_BUILT="0"
 
@@ -42,56 +42,40 @@ FFMPEG_CACHE_VERSION="3"
 OPENAL_PATH="$BUILD/openal-soft"
 OPENAL_CACHE_VERSION="4"
 
-GYP_DEFINES=""
+GYP_DEFINES="TDESKTOP_DISABLE_CRASH_REPORTS,TDESKTOP_DISABLE_AUTOUPDATE"
 
 [[ ! $MAKE_ARGS ]] && MAKE_ARGS="--silent -j4"
 
 run() {
-  # Move files to subdir
-  cd ..
-  mv tdesktop tdesktop2
-  mkdir tdesktop
-  mv tdesktop2 "$UPSTREAM"
 
-  mkdir "$BUILD"
+
+  # Move files to subdir
+  #cd ..
+  #mv tdesktop tdesktop2
+  #mkdir tdesktop
+  #mv tdesktop2 "$UPSTREAM"
+
+  #mkdir "$BUILD"
 
   build
   check
 }
 
 build() {
+  mkdir -p ${BUILD}
   mkdir -p "$EXTERNAL"
 
   BUILD_VERSION_DATA=$(echo $BUILD_VERSION | cut -d'-' -f 1)
 
-  # libxkbcommon
   getXkbCommon
-
-  # libva
   getVa
-
-  # libvdpau
   getVdpau
-
-  # ffmpeg
   getFFmpeg
-
-  # openal_soft
   getOpenAL
-
-  # Patched Qt
   getCustomQt
-
-  # Breakpad
   getBreakpad
-
-  # Patched GYP (supports cmake precompiled headers)
   getGYP
-
-  # Range v3
   getRange
-
-  # Guideline Support Library
   getGSL
 
   if [ "$QT_WAS_BUILT" == "1" ]; then
@@ -427,7 +411,7 @@ buildFFmpeg() {
       --enable-demuxer=wav \
       --enable-muxer=ogg \
       --enable-muxer=opus
-  make $MAKE_ARGS
+  make ${MAKE_ARGS}
   sudo make install
   sudo ldconfig
 }
@@ -614,7 +598,7 @@ buildCustomQt() {
 }
 
 getGSL() {
-  cd "$UPSTREAM"
+  # cd "$UPSTREAM"
   git submodule init
   git submodule update
 }
@@ -632,7 +616,9 @@ getGYP() {
     mkdir -p "$GYP_CACHE"
   fi
 
-  ln -sf "$GYP_CACHE" "$GYP_PATH"
+  if [[ ! -e "$GYP_PATH" ]]; then
+      ln -sf "$GYP_CACHE" "$GYP_PATH"
+  fi
 
   if [ -f "$GYP_CACHE_FILE" ]; then
     local GYP_CACHE_KEY_FOUND=`tail -n 1 $GYP_CACHE_FILE`
@@ -672,40 +658,98 @@ buildTelegram() {
   travisStartFold "Build tdesktop"
 
   cd "$UPSTREAM/Telegram/gyp"
-  "$GYP_PATH/gyp" \
-      -Dapi_id=17349 \
-      -Dapi_hash=344583e45741c457fe1862106095a5eb \
-      -Dbuild_defines=${GYP_DEFINES:1} \
-      -Dlinux_path_xkbcommon=$XKB_PATH \
-      -Dlinux_path_va=$VA_PATH \
-      -Dlinux_path_vdpau=$VDPAU_PATH \
-      -Dlinux_path_ffmpeg=$FFMPEG_PATH \
-      -Dlinux_path_openal=$OPENAL_PATH \
-      -Dlinux_path_range=$RANGE_PATH \
-      -Dlinux_path_qt=$QT_PATH \
-      -Dlinux_path_breakpad=$BREAKPAD_PATH \
-      -Dlinux_path_libexif_lib=/usr/local/lib \
-      -Dlinux_path_opus_include=/usr/include/opus \
-      -Dlinux_lib_ssl=-lssl \
-      -Dlinux_lib_crypto=-lcrypto \
-      -Dlinux_lib_icu=-licuuc\ -licutu\ -licui18n \
-      --depth=. --generator-output=.. --format=cmake -Goutput_dir=../out \
-      Telegram.gyp
-  cd "$UPSTREAM/out/Debug"
+#  "$GYP_PATH/gyp" \
+#      -Dbuild_defines=${GYP_DEFINES:1} \
+#      -Dlinux_path_xkbcommon=$XKB_PATH \
+#      -Dlinux_path_va=$VA_PATH \
+#      -Dlinux_path_vdpau=$VDPAU_PATH \
+#      -Dlinux_path_ffmpeg=$FFMPEG_PATH \
+#      -Dlinux_path_openal=$OPENAL_PATH \
+#      -Dlinux_path_range=$RANGE_PATH \
+#      -Dlinux_path_qt=$QT_PATH \
+#      -Dlinux_path_breakpad=$BREAKPAD_PATH \
+#      -Dlinux_path_libexif_lib=/usr/local/lib \
+#      -Dlinux_path_opus_include=/usr/include/opus \
+#      -Dlinux_lib_ssl=-lssl \
+#      -Dlinux_lib_crypto=-lcrypto \
+#      -Dlinux_lib_icu=-licuuc\ -licutu\ -licui18n \
+#      --depth=. --generator-output=.. --format=cmake -Goutput_dir=../out \
+#      Telegram.gyp
 
-  export ASM="gcc"
-  cmake .
+#  "$GYP_PATH/gyp" \
+#      -Dapi_id=17349 \
+#      -Dapi_hash=344583e45741c457fe1862106095a5eb \
+#      -Dbuild_defines=${GYP_DEFINES:1} \
+#      -Dlinux_path_xkbcommon=$XKB_PATH \
+#      -Dlinux_path_va=$VA_PATH \
+#      -Dlinux_path_vdpau=$VDPAU_PATH \
+#      -Dlinux_path_ffmpeg=$FFMPEG_PATH \
+#      -Dlinux_path_openal=$OPENAL_PATH \
+#      -Dlinux_path_range=$RANGE_PATH \
+#      -Dlinux_path_qt=$QT_PATH \
+#      -Dlinux_path_breakpad=$BREAKPAD_PATH \
+#      -Dlinux_path_libexif_lib=/usr/local/lib \
+#      -Dlinux_path_opus_include=/usr/include/opus \
+#      -Dlinux_lib_ssl=-lssl \
+#      -Dlinux_lib_crypto=-lcrypto \
+#      -Dlinux_lib_icu=-licuuc\ -licutu\ -licui18n \
+#      --depth=. --generator-output=.. --format=cmake -Goutput_dir=../out \
+#      Telegram.gyp
+
+#  cd "$UPSTREAM/out/Debug"
+
+
+#  "$GYP_PATH/gyp" \
+#    --format=cmake \
+#    --depth=. \
+#    --generator-output=.. \
+#    -Dapi_id=17349 \
+#    -Dapi_hash=344583e45741c457fe1862106095a5eb \
+#    -Goutput_dir=../out \
+#    -Dbuild_defines=${GYP_DEFINES:1} \
+#    -Dlinux_path_opus_include=/usr/include/opus \
+#    -Dlinux_path_xkbcommon=${XKB_PATH} \
+#    -Dlinux_path_va=${VA_PATH} \
+#    -Dlinux_path_vdpau=${VDPAU_PATH} \
+#    -Dlinux_path_ffmpeg=${FFMPEG_PATH} \
+#    -Dlinux_path_openal=${OPENAL_PATH} \
+#    -Dlinux_path_range=${RANGE_PATH} \
+#    -Dlinux_path_qt=${QT_PATH} \
+#    -Dlinux_path_breakpad=${BREAKPAD_PATH} \
+#    Telegram.gyp
+
+  # -Dofficial_build_target=linux \
+
+  cd "$UPSTREAM/out/Release"
+
+  export ASM=$(which gcc)
+  export CFLAGS="-std=c++11 -fno-strict-overflow"
+  # export CXXFLAGS="-fno-strict-overflow -flto -fuse-linker-plugin"
+  export CXXFLAGS="-std=c++11 -fno-strict-overflow"
+  # ${REPO}/cmake/cmake-3.5.2/bin/
+
+  export CFLAGS="-fno-strict-overflow"
+  export CXXFLAGS="-fno-strict-overflow"
+  cmake -j4 \
+        -D CMAKE_BUILD_TYPE=Release \
+        -Werror=dev \
+        -Wno-error=dev \
+        .
   make $MAKE_ARGS
 }
 
 check() {
-  local filePath="$UPSTREAM/out/Debug/Telegram"
+  local filePath="${REPO}/out/Release/Telegram"
   if test -f "$filePath"; then
     success_msg "Build successfully done! :)"
 
     local size;
     size=$(stat -c %s "$filePath")
     success_msg "File size of ${filePath}: ${size} Bytes"
+    strip -s ${filePath}
+    chrpath -d ${filePath}
+    size=$(stat -c %s "$filePath")
+    success_msg "Stripped size of ${filePath}: ${size} Bytes"
   else
     error_msg "Build error, output file does not exist"
     exit 1

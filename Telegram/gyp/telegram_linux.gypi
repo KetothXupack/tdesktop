@@ -12,10 +12,10 @@
       },
       'not_need_gtk%': '<!(python -c "print(\'TDESKTOP_DISABLE_GTK_INTEGRATION\' in \'<(build_defines)\')")',
       'pkgconfig_libs': [
-# In order to work libxkbcommon must be linked statically,
-# PKGCONFIG links it like "-L/usr/local/lib -lxkbcommon"
-# which makes a dynamic link which leads to segfault in
-# QApplication() -> createPlatformIntegration -> QXcbIntegrationPlugin::create
+        # In order to work libxkbcommon must be linked statically,
+        # PKGCONFIG links it like "-L/usr/local/lib -lxkbcommon"
+        # which makes a dynamic link which leads to segfault in
+        # QApplication() -> createPlatformIntegration -> QXcbIntegrationPlugin::create
         #'xkbcommon',
       ],
       'linux_path_ffmpeg%': '/usr/local',
@@ -63,6 +63,9 @@
       'libvdpau.a',
       'libdrm.a',
       'libz.a',
+      'libbz2.a',
+      'libuuid.a',
+      # 'libbsd.a',
 #      '<!(pkg-config 2> /dev/null --libs <@(pkgconfig_libs))',
     ],
     'cflags_cc': [
@@ -70,6 +73,7 @@
       '-Wno-maybe-uninitialized',
     ],
     'ldflags': [
+      '-fPIC',
       '-Wl,-wrap,aligned_alloc',
       '-Wl,-wrap,secure_getenv',
       '-Wl,-wrap,clock_gettime',
