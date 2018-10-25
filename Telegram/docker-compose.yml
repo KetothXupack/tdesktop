@@ -1,0 +1,12 @@
+version: '2.2'
+
+services:
+  telegram_build:
+    image: telegram/build:latest
+    build:
+      context: ./
+    hostname: telegram
+    volumes:
+      - ..:/srv/telegram:rw
+    tmpfs:
+      - /tmp

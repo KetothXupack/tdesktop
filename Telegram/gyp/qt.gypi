@@ -95,7 +95,7 @@
               'freetype',
               'z',
               'xcb-shm',
-              'xcb-xfixes',
+              # 'xcb-xfixes',
               'xcb-render',
               'xcb-static',
             ],
@@ -129,8 +129,10 @@
     'qt_moc_list_sources_arg': '--moc-prefix SHARED_INTERMEDIATE_DIR/<(_target_name)/moc/moc_',
 
     'linux_path_xkbcommon%': '/usr/local',
-    'linux_lib_ssl%': '/usr/local/ssl/lib/libssl.a',
-    'linux_lib_crypto%': '/usr/local/ssl/lib/libcrypto.a',
+    # 'linux_lib_ssl%': '/usr/local/ssl/lib/libssl.a',
+    'linux_lib_ssl%': '/usr/lib/x86_64-linux-gnu/libssl.a',
+    # 'linux_lib_crypto%': '/usr/local/ssl/lib/libcrypto.a',
+    'linux_lib_crypto%': '/usr/lib/x86_64-linux-gnu/libcrypto.a',
     'linux_lib_icu%': 'libicutu.a libicui18n.a libicuuc.a libicudata.a',
   },
 
